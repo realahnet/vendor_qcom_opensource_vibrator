@@ -59,6 +59,15 @@ namespace vibrator {
 #define STRONG_MAGNITUDE        0x7fff
 #define MEDIUM_MAGNITUDE        0x5fff
 #define LIGHT_MAGNITUDE         0x3fff
+/*
+ * Magnitude span used by the primitive amplitude mapping in playPrimitive().
+ * The stock curve uses LIGHT_MAGNITUDE (0x3fff) as the span, which caps FIFO
+ * primitives at ~45% of vmax while predefined effects reach ~100%. Use ~82% of
+ * STRONG_MAGNITUDE so primitives reach ~70% of vmax at full scale, while the
+ * 0x800 minimum is kept so the user vibration-intensity setting keeps its full
+ * dynamic range.
+ */
+#define PRIMITIVE_MAGNITUDE_SPAN ((STRONG_MAGNITUDE * 82) / 100)
 #define INVALID_VALUE           -1
 #define CUSTOM_DATA_LEN         3
 #define NAME_BUF_SIZE           32
@@ -384,7 +393,7 @@ int InputFFDevice::playPrimitive(int primitiveId, float amplitude, long *playLen
 	    amplitude = 0.882;
 
     tmp = (uint8_t)(powf(amplitude, 2.0f) * 0xff);
-    mCurrMagnitude = tmp * LIGHT_MAGNITUDE / 255;
+    mCurrMagnitude = tmp * PRIMITIVE_MAGNITUDE_SPAN / 255;
     mCurrMagnitude += 0x800;
     const struct effect_stream *stream = get_effect_stream(primitiveId);
     if (!stream) {
